@@ -31,7 +31,8 @@
       "Bash(ls:*)",
       "Bash(netstat:*)",
       "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 3399 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess,State\")",
-      "Bash(taskkill.exe:*)"
+      "Bash(taskkill.exe:*)",
+      "Bash(git push:*)"
     ]
   }
 }
