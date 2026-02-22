@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>MobeClaude</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0F172A;--surface:#1E293B;--border:#334155;--text:#F8FAFC;--muted:#94A3B8;--accent:#22C55E;--accent2:#3B82F6}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;height:100vh;display:flex;flex-direction:column;user-select:none}
+#topBar{display:flex;align-items:center;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+#topBar h1{flex:1;font-size:1rem;font-weight:600;letter-spacing:-.01em}
+#topBar button{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 6px;border-radius:6px}
+#topBar button:hover{background:var(--border);color:var(--text)}
+
+/* 主视图 */
+#main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px}
+#qrBox{background:#fff;border-radius:12px;padding:12px;display:flex;align-items:center;justify-content:center;width:244px;height:244px}
+#qrImg{width:220px;height:220px}
+#qrPlaceholder{width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:#999;font-size:.8rem;text-align:center}
+#statusBadge{font-size:.75rem;padding:4px 12px;border-radius:20px;font-weight:500}
+#statusBadge.tunnel{background:rgba(34,197,94,.15);color:var(--accent)}
+#statusBadge.local{background:rgba(148,163,184,.1);color:var(--muted)}
+#statusBadge.waiting{background:rgba(251,191,36,.1);color:#FBB724}
+#urlRow{display:flex;align-items:center;gap:8px;width:100%}
+#urlText{flex:1;font-size:.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--surface);padding:8px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer}
+#urlRow button{padding:7px 12px;background:var(--accent2);color:#fff;border:none;border-radius:8px;font-size:.75rem;cursor:pointer;white-space:nowrap}
+#urlRow button:active{opacity:.8}
+#openBtn{width:100%;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:.8rem;cursor:pointer}
+#openBtn:hover{border-color:var(--accent);color:var(--text)}
+
+/* 设置视图 */
+#settings{flex:1;display:none;flex-direction:column;padding:16px;gap:12px;overflow-y:auto}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.75rem;color:var(--muted)}
+.field input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:.85rem;outline:none}
+.field input:focus{border-color:var(--accent2)}
+#saveBtn{padding:11px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;margin-top:4px}
+#saveMsg{font-size:.75rem;color:var(--accent);text-align:center;min-height:18px}
+</style>
+</head>
+<body>
+<div id="topBar">
+  <h1>🖥 MobeClaude</h1>
+  <button id="settingsBtn" title="设置">⚙</button>
+</div>
+
+<div id="main">
+  <div id="qrBox">
+    <img id="qrImg" style="display:none">
+    <div id="qrPlaceholder">正在启动...</div>
+  </div>
+  <div id="statusBadge" class="waiting">等待隧道连接...</div>
+  <div id="urlRow">
+    <div id="urlText">--</div>
+    <button id="copyBtn">复制</button>
+  </div>
+  <button id="openBtn">在浏览器中打开</button>
+</div>
+
+<div id="settings">
+  <div class="field"><label>端口</label><input id="cfgPort" type="number"></div>
+  <div class="field"><label>Token（留空自动生成）</label><input id="cfgToken" placeholder="留空自动生成"></div>
+  <div class="field"><label>工作目录</label><input id="cfgCwd"></div>
+  <button id="saveBtn">保存</button>
+  <div id="saveMsg"></div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+let currentUrl = '';
+
+async function refresh() {
+  const s = await ipcRenderer.invoke('get-status');
+  currentUrl = s.url;
+  document.getElementById('urlText').textContent = s.url;
+  document.getElementById('qrImg').src = s.qr;
+  document.getElementById('qrImg').style.display = 'block';
+  document.getElementById('qrPlaceholder').style.display = 'none';
+  const badge = document.getElementById('statusBadge');
+  if (s.hasTunnel) { badge.textContent = '✓ 隧道已连接（公网可访问）'; badge.className = 'tunnel'; }
+  else { badge.textContent = '仅局域网'; badge.className = 'local'; }
+}
+
+ipcRenderer.on('tunnel-ready', refresh);
+refresh();
+
+document.getElementById('copyBtn').onclick = () => {
+  ipcRenderer.invoke('copy', currentUrl);
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 1500);
+};
+document.getElementById('openBtn').onclick = () => ipcRenderer.invoke('open-browser', currentUrl);
+
+// 设置切换
+document.getElementById('settingsBtn').onclick = async () => {
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('settings').style.display = 'flex';
+  document.getElementById('settingsBtn').textContent = '←';
+  document.getElementById('settingsBtn').onclick = () => {
+    document.getElementById('settings').style.display = 'none';
+    document.getElementById('main').style.display = 'flex';
+    document.getElementById('settingsBtn').textContent = '⚙';
+    document.getElementById('settingsBtn').onclick = arguments.callee.caller; // reset
+    location.reload(); // 重新绑定
+  };
+  const cfg = await ipcRenderer.invoke('get-config');
+  document.getElementById('cfgPort').value = cfg.port || 3399;
+  document.getElementById('cfgToken').value = cfg.token || '';
+  document.getElementById('cfgCwd').value = cfg.cwd || '';
+};
+
+document.getElementById('saveBtn').onclick = async () => {
+  const cfg = await ipcRenderer.invoke('get-config');
+  cfg.port = parseInt(document.getElementById('cfgPort').value) || 3399;
+  cfg.token = document.getElementById('cfgToken').value.trim() || cfg.token;
+  cfg.cwd = document.getElementById('cfgCwd').value.trim() || cfg.cwd;
+  await ipcRenderer.invoke('save-config', cfg);
+  document.getElementById('saveMsg').textContent = '已保存，重启后生效';
+};
+</script>
+</body>
+</html>

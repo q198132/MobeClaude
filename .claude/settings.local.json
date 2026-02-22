@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(npm --version)",
+      "Bash(winget install:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e:*)",
+      "Bash(timeout 20 node:*)",
+      "Bash(cmd /c \"where cloudflared\")",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\86156\\\\cloudflared.exe 2>nul & dir /s /b \"\"C:\\\\Program Files\\\\cloudflared\\\\cloudflared.exe\"\" 2>nul & dir /s /b \"\"C:\\\\Program Files \\(x86\\)\\\\cloudflared\\\\cloudflared.exe\"\" 2>nul\")",
+      "Bash(powershell -Command:*)",
+      "Bash(timeout 25 node:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_text_file",
+      "Bash(dir:*)",
+      "mcp__filesystem__list_directory",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__github__get_file_contents",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)",
+      "mcp__playwright__playwright_navigate",
+      "mcp__playwright__playwright_get_visible_text",
+      "Bash(npm_config_ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ npm install:*)",
+      "Bash(tasklist:*)",
+      "Bash(ls:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 3399 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess,State\")",
+      "Bash(taskkill.exe:*)"
+    ]
+  }
+}

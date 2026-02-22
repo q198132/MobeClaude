@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>MobeClaude - 终端</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0F172A;--surface:#1E293B;--border:#334155;--text:#F8FAFC;--muted:#94A3B8;--accent:#22C55E;--accent2:#3B82F6}
+body{background:var(--bg);height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+
+#topBar{display:flex;align-items:center;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--border);gap:8px}
+#topBar a{color:var(--muted);text-decoration:none;font-size:1.1rem;padding:2px 6px}
+#topBar span{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;color:var(--text)}
+#connDot{width:7px;height:7px;border-radius:50%;background:#EF4444;margin-left:auto}
+#connDot.on{background:var(--accent)}
+
+#terminal{flex:1;overflow:hidden}
+.xterm{padding:0!important}
+
+#toolbar{display:flex;gap:5px;padding:6px 8px;background:var(--surface);border-top:1px solid var(--border);user-select:none;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#toolbar::-webkit-scrollbar{display:none}
+#toolbar button{flex-shrink:0;padding:9px 12px;min-width:42px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;font-family:'Space Grotesk',monospace;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,border-color .15s}
+#toolbar button:active{background:var(--border)}
+#toolbar button.mod{background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.3);color:#A78BFA}
+#toolbar button.mod.active{background:rgba(139,92,246,.3);border-color:#A78BFA}
+#toolbar button.danger{color:#F87171;border-color:rgba(248,113,113,.25)}
+</style>
+</head>
+<body>
+<div id="topBar">
+  <a href="javascript:history.back()">←</a>
+  <span>Terminal</span>
+  <div id="connDot"></div>
+</div>
+<div id="terminal"></div>
+<div id="toolbar">
+  <button data-k="esc">Esc</button>
+  <button data-k="tab">Tab</button>
+  <button data-k="up">↑</button>
+  <button data-k="down">↓</button>
+  <button data-k="left">←</button>
+  <button data-k="right">→</button>
+  <button class="mod" data-mod="ctrl">Ctrl</button>
+  <button class="danger" data-k="cc">C-c</button>
+  <button data-k="cd">C-d</button>
+  <button data-k="cz">C-z</button>
+  <button data-k="cl">C-l</button>
+  <button data-k="enter">Enter</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+<script>
+const token = new URLSearchParams(location.search).get('token');
+const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const ws = new WebSocket(`${proto}//${location.host}?token=${token}&mode=terminal`);
+
+const term = new Terminal({
+  fontSize: 14,
+  fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+  theme: { background: '#0F172A', foreground: '#F8FAFC', cursor: '#22C55E', selectionBackground: '#334155' },
+  cursorBlink: true,
+  convertEol: true,
+});
+const fitAddon = new FitAddon.FitAddon();
+term.loadAddon(fitAddon);
+term.open(document.getElementById('terminal'));
+fitAddon.fit();
+
+ws.onopen = () => {
+  document.getElementById('connDot').classList.add('on');
+  ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+};
+ws.onmessage = e => {
+  const msg = JSON.parse(e.data);
+  if (msg.type === 'output') term.write(msg.data);
+};
+ws.onclose = () => { document.getElementById('connDot').classList.remove('on'); term.write('\r\n[连接已断开]\r\n'); };
+
+term.onData(data => {
+  if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'input', data }));
+});
+term.onResize(({ cols, rows }) => {
+  if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+});
+
+window.addEventListener('resize', () => fitAddon.fit());
+
+// 工具栏
+const KEYS = {
+  esc:'\x1b', tab:'\t', up:'\x1b[A', down:'\x1b[B',
+  left:'\x1b[D', right:'\x1b[C', enter:'\r',
+  cc:'\x03', cd:'\x04', cz:'\x1a', cl:'\x0c'
+};
+let ctrlActive = false;
+const ctrlBtn = document.querySelector('[data-mod="ctrl"]');
+document.getElementById('toolbar').addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (btn.dataset.mod === 'ctrl') {
+    ctrlActive = !ctrlActive;
+    btn.classList.toggle('active', ctrlActive);
+    return;
+  }
+  let key = KEYS[btn.dataset.k];
+  if (!key) return;
+  if (ctrlActive) { ctrlActive = false; ctrlBtn.classList.remove('active'); }
+  if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'input', data: key }));
+  term.focus();
+});
+</script>
+</body>
+</html>

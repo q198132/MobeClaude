@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>MobeClaude - 聊天</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0F172A;--surface:#1E293B;--border:#334155;
+  --text:#F8FAFC;--muted:#94A3B8;--accent:#22C55E;
+  --accent2:#3B82F6;--danger:#EF4444;--radius:12px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;overflow:hidden}
+
+/* 遮罩 */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9;opacity:0;pointer-events:none;transition:opacity .25s}
+#overlay.show{opacity:1;pointer-events:auto}
+
+/* 侧边栏 */
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:300px;background:var(--surface);z-index:10;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column}
+#sidebar.open{transform:translateX(0)}
+
+.sb-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-logo{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center}
+.sb-logo svg{width:16px;height:16px;color:#fff}
+.sb-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem}
+
+#newBtn{margin:16px;padding:11px;border:1px dashed var(--border);border-radius:var(--radius);background:none;color:var(--accent);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s}
+#newBtn:active{background:rgba(34,197,94,.08);border-color:var(--accent)}
+
+.sb-section{padding:4px 20px 8px;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.sb-list{overflow-y:auto;flex:1}
+
+.s-item{display:flex;align-items:center;padding:12px 20px;gap:10px;cursor:pointer;transition:background .15s}
+.s-item:active,.s-item:hover{background:rgba(255,255,255,.04)}
+.s-item.active{background:rgba(34,197,94,.08);border-right:2px solid var(--accent)}
+.s-item .ico{width:32px;height:32px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.s-item .ico svg{width:16px;height:16px;color:var(--muted)}
+.s-item .info{flex:1;min-width:0}
+.s-item .name{font-size:.85rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-item .sub{font-size:.7rem;color:var(--muted);margin-top:2px}
+.s-item .del{color:var(--danger);font-size:.9rem;padding:4px 6px;border-radius:6px;opacity:.5;transition:opacity .15s}
+.s-item .del:hover{opacity:1}
+
+/* 主区域 */
+#main{flex:1;display:flex;flex-direction:column;width:100%}
+
+#header{padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+#menuBtn{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color .15s}
+#menuBtn:active{color:var(--text)}
+#sessionName{flex:1;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#status{width:8px;height:8px;border-radius:50%;background:var(--danger);transition:background .3s}
+#status.on{background:var(--accent);box-shadow:0 0 8px rgba(34,197,94,.4)}
+
+/* 输出区 */
+#messages{flex:1;overflow-y:auto;padding:12px 16px;font-family:'Menlo','Monaco','Courier New',monospace;font-size:.8rem;line-height:1.7;color:#CBD5E1;white-space:pre-wrap;word-break:break-all}
+.msg-user{color:var(--accent);padding:4px 0}
+.msg-user::before{content:'> ';color:var(--accent2)}
+
+/* 快捷栏 */
+#quickBar{display:flex;gap:6px;padding:6px 12px;background:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch}
+#quickBar::-webkit-scrollbar{display:none}
+#quickBar button{flex-shrink:0;padding:7px 14px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;white-space:nowrap;cursor:pointer;transition:border-color .15s,color .15s}
+#quickBar button:active{border-color:var(--accent);color:var(--accent)}
+#quickBar button.yes{color:var(--accent);border-color:rgba(34,197,94,.3)}
+#quickBar button.no{color:var(--danger);border-color:rgba(239,68,68,.3)}
+
+/* 输入栏 */
+#inputBar{padding:10px 12px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+#input{flex:1;padding:11px 16px;border:1px solid var(--border);border-radius:24px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s}
+#input:focus{border-color:var(--accent2)}
+#input::placeholder{color:var(--muted)}
+#send{width:42px;height:42px;border:none;border-radius:50%;background:var(--accent);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,opacity .15s;flex-shrink:0}
+#send:active{transform:scale(.9)}
+#send svg{width:18px;height:18px}
+</style>
+</head>
+<body>
+<div id="overlay"></div>
+<div id="sidebar">
+  <div class="sb-header">
+    <div class="sb-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+    <span class="sb-title">MobeClaude</span>
+  </div>
+  <button id="newBtn">+ 新建对话</button>
+  <div class="sb-section">对话列表</div>
+  <div class="sb-list" id="sessionList"></div>
+  <div class="sb-section">切换项目</div>
+  <div class="sb-list" id="projectList"></div>
+</div>
+<div id="main">
+  <div id="header">
+    <button id="menuBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <span id="sessionName">Claude Code</span>
+    <div id="status"></div>
+  </div>
+  <div id="messages"></div>
+  <div id="quickBar">
+    <button class="yes" data-cmd="y">Accept (y)</button>
+    <button class="no" data-cmd="n">Reject (n)</button>
+    <button data-k="cc">Ctrl+C</button>
+    <button data-cmd="/help">/help</button>
+    <button data-cmd="/status">/status</button>
+  </div>
+  <div id="inputBar">
+    <input id="input" placeholder="输入指令..." autocomplete="off">
+    <button id="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+<script>
+const token = new URLSearchParams(location.search).get('token');
+const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+const api = p => `${p}?token=${token}`;
+const msgs = document.getElementById('messages');
+const input = document.getElementById('input');
+const statusEl = document.getElementById('status');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const sessionNameEl = document.getElementById('sessionName');
+let ws = null, currentSid = null;
+
+// 侧边栏
+function toggleSidebar(open) {
+  sidebar.classList.toggle('open', open);
+  overlay.classList.toggle('show', open);
+}
+document.getElementById('menuBtn').onclick = () => toggleSidebar(true);
+overlay.onclick = () => toggleSidebar(false);
+
+// WebSocket
+function connect(sid) {
+  if (ws) ws.close();
+  msgs.innerHTML = '';
+  const sidParam = sid ? `&sid=${sid}` : '';
+  ws = new WebSocket(`${proto}//${location.host}?token=${token}&mode=chat${sidParam}`);
+  ws.onopen = () => statusEl.classList.add('on');
+  ws.onclose = () => { statusEl.classList.remove('on'); addMsg('bot','[连接已断开]'); };
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'session') { currentSid = msg.id; sessionNameEl.textContent = msg.name; loadSessions(); }
+    if (msg.type === 'output') addMsg('bot', msg.data);
+  };
+}
+
+function addMsg(type, text) {
+  const clean = text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1b\][^\x07]*\x07/g, '');
+  if (!clean.trim()) return;
+  if (type === 'bot') {
+    // 直接追加文本
+    msgs.appendChild(document.createTextNode(clean));
+  } else {
+    const span = document.createElement('div');
+    span.className = 'msg-user';
+    span.textContent = clean;
+    msgs.appendChild(span);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function sendText(t) { if (!t || !ws || ws.readyState !== 1) return; addMsg('user', t); ws.send(JSON.stringify({ type: 'input', data: t })); }
+function sendRaw(k) { if (!ws || ws.readyState !== 1) return; ws.send(JSON.stringify({ type: 'input', data: k })); }
+
+// 输入
+document.getElementById('send').onclick = () => { sendText(input.value.trim()); input.value = ''; };
+input.onkeydown = e => { if (e.key === 'Enter') { sendText(input.value.trim()); input.value = ''; } };
+
+// 快捷按钮
+const KEYS = { cc:'\x03' };
+document.getElementById('quickBar').onclick = e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (btn.dataset.cmd) sendText(btn.dataset.cmd);
+  else if (btn.dataset.k) sendRaw(KEYS[btn.dataset.k]);
+};
+
+// 会话管理
+async function loadSessions() {
+  const res = await fetch(api('/api/sessions'));
+  const list = await res.json();
+  const el = document.getElementById('sessionList');
+  el.innerHTML = '';
+  list.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 's-item' + (s.id === currentSid ? ' active' : '');
+    div.innerHTML = `<div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="info"><div class="name">${s.name}</div><div class="sub">${s.id}</div></div><span class="del">&times;</span>`;
+    div.querySelector('.info').onclick = () => { connect(s.id); toggleSidebar(false); };
+    div.querySelector('.del').onclick = async (e) => {
+      e.stopPropagation();
+      await fetch(api(`/api/sessions/${s.id}`), { method: 'DELETE' });
+      loadSessions();
+      if (s.id === currentSid) connect();
+    };
+    el.appendChild(div);
+  });
+}
+
+document.getElementById('newBtn').onclick = async () => {
+  const res = await fetch(api('/api/sessions'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const s = await res.json();
+  connect(s.id);
+  toggleSidebar(false);
+};
+
+// 项目列表
+async function loadProjects() {
+  const res = await fetch(api('/api/projects'));
+  const list = await res.json();
+  const el = document.getElementById('projectList');
+  el.innerHTML = '';
+  list.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 's-item';
+    div.innerHTML = `<div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><div class="name">${p.name}</div>`;
+    div.onclick = async () => {
+      const res = await fetch(api('/api/sessions'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cwd: p.path, name: p.name }) });
+      const s = await res.json();
+      connect(s.id);
+      toggleSidebar(false);
+    };
+    el.appendChild(div);
+  });
+}
+
+connect();
+loadProjects();
+</script>
+</body>
+</html>

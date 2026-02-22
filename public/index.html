@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>MobeClaude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0F172A;--surface:#1E293B;--border:#334155;
+  --text:#F8FAFC;--muted:#94A3B8;--accent:#22C55E;
+  --accent2:#3B82F6;--radius:16px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow:hidden}
+
+/* 背景网格 */
+body::before{content:'';position:fixed;inset:0;background-image:
+  linear-gradient(rgba(51,65,85,.15) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(51,65,85,.15) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0}
+
+.container{position:relative;z-index:1;text-align:center;width:100%;max-width:400px}
+
+/* Logo */
+.logo{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 0 40px rgba(34,197,94,.2)}
+.logo svg{width:32px;height:32px;color:#fff}
+
+h1{font-family:'Space Grotesk',sans-serif;font-size:1.75rem;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.subtitle{color:var(--muted);font-size:.9rem;margin-bottom:36px}
+
+/* 模式卡片 */
+.modes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.mode{display:flex;flex-direction:column;align-items:center;gap:10px;width:116px;padding:22px 12px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:transform .2s,border-color .2s,box-shadow .2s;cursor:pointer}
+.mode:active{transform:scale(.96)}
+.mode:hover{border-color:var(--accent);box-shadow:0 0 24px rgba(34,197,94,.1)}
+
+.mode-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.mode-icon svg{width:22px;height:22px}
+.mode:nth-child(1) .mode-icon{background:rgba(34,197,94,.12);color:var(--accent)}
+.mode:nth-child(2) .mode-icon{background:rgba(59,130,246,.12);color:var(--accent2)}
+.mode:nth-child(3) .mode-icon{background:rgba(251,191,36,.1);color:#FBB724}
+
+.mode-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.95rem}
+.mode-desc{font-size:.75rem;color:var(--muted);line-height:1.4}
+
+/* 底部提示 */
+.hint{position:fixed;bottom:20px;color:var(--muted);font-size:.7rem;opacity:.6}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+  </div>
+  <h1>MobeClaude</h1>
+  <p class="subtitle">远程控制 Claude Code</p>
+  <div class="modes">
+    <a class="mode" id="termBtn">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      </div>
+      <div class="mode-label">终端模式</div>
+      <div class="mode-desc">完整终端体验</div>
+    </a>
+    <a class="mode" id="chatBtn">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="mode-label">聊天模式</div>
+      <div class="mode-desc">对话式交互</div>
+    </a>
+    <a class="mode" id="filesBtn">
+      <div class="mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="mode-label">文件管理</div>
+      <div class="mode-desc">浏览编辑文件</div>
+    </a>
+  </div>
+</div>
+<div class="hint">MobeClaude v1.0</div>
+<script>
+const token = new URLSearchParams(location.search).get('token');
+document.getElementById('termBtn').href = 'terminal.html?token=' + token;
+document.getElementById('chatBtn').href = 'chat.html?token=' + token;
+document.getElementById('filesBtn').href = 'files.html?token=' + token;
+</script>
+</body>
+</html>
